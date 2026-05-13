@@ -1,0 +1,17 @@
+# 环境变量（含API Key，绝对不能上传）
+backend/.env
+frontend/.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+
+# Node
+node_modules/
+dist/
+
+# 系统文件
+.DS_Store
