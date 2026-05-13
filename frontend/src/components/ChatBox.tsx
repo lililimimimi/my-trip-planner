@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { ChatMessage, TripPlan } from "../types";
-import { sendMessage, clearHistory } from "../services/api";
+import { sendMessageStream, clearHistory } from "../services/api";
 
 interface Props {
   onTripPlanReceived: (plan: TripPlan) => void;
@@ -16,6 +16,12 @@ export default function ChatBox({ onTripPlanReceived }: Props) {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [streamingContent, setStreamingContent] = useState("");
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, streamingContent]);
 
   const send = async (message: string, replan_mode?: string) => {
     if (!message.trim() && !replan_mode) return;
@@ -27,20 +33,36 @@ export default function ChatBox({ onTripPlanReceived }: Props) {
     }
     setInput("");
     setLoading(true);
+    setStreamingContent("");
 
     try {
-      const response = await sendMessage(userMessage, replan_mode);
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: response.message,
-          trip_plan: response.trip_plan,
+      await sendMessageStream(
+        userMessage,
+        replan_mode,
+        (chunk) => {
+          setStreamingContent((prev) => prev + chunk);
         },
-      ]);
-      if (response.trip_plan) {
-        onTripPlanReceived(response.trip_plan);
-      }
+        (result) => {
+          setMessages((prev) => {
+            const lastStreaming = streamingContent;
+            return [
+              ...prev,
+              {
+                role: "assistant",
+                content:
+                  lastStreaming ||
+                  result.message ||
+                  "行程已生成，请查看右侧详情",
+                trip_plan: result.trip_plan,
+              },
+            ];
+          });
+          setStreamingContent("");
+          if (result.trip_plan) {
+            onTripPlanReceived(result.trip_plan);
+          }
+        },
+      );
     } catch (error) {
       setMessages((prev) => [
         ...prev,
@@ -49,6 +71,7 @@ export default function ChatBox({ onTripPlanReceived }: Props) {
           content: "抱歉，出错了，请重试。",
         },
       ]);
+      setStreamingContent("");
     } finally {
       setLoading(false);
     }
@@ -97,7 +120,37 @@ export default function ChatBox({ onTripPlanReceived }: Props) {
             {msg.content}
           </div>
         ))}
-        {loading && (
+
+        {/* 流式输出中 */}
+        {streamingContent && (
+          <div
+            style={{
+              alignSelf: "flex-start",
+              maxWidth: "80%",
+              background: "#f5f5f5",
+              color: "#333",
+              padding: "10px 14px",
+              borderRadius: "16px 16px 16px 4px",
+              fontSize: "13px",
+              lineHeight: "1.6",
+            }}
+          >
+            {streamingContent}
+            <span
+              style={{
+                display: "inline-block",
+                width: "6px",
+                height: "14px",
+                background: "#999",
+                marginLeft: "2px",
+                verticalAlign: "middle",
+                animation: "blink 1s infinite",
+              }}
+            />
+          </div>
+        )}
+
+        {loading && !streamingContent && (
           <div
             style={{
               alignSelf: "flex-start",
@@ -111,6 +164,7 @@ export default function ChatBox({ onTripPlanReceived }: Props) {
             规划中...
           </div>
         )}
+        <div ref={bottomRef} />
       </div>
 
       {/* 输入框 */}
@@ -169,6 +223,13 @@ export default function ChatBox({ onTripPlanReceived }: Props) {
           清空
         </button>
       </div>
+
+      <style>{`
+        @keyframes blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0; }
+        }
+      `}</style>
     </div>
   );
 }
