@@ -10,19 +10,22 @@ export default function LocalFoodList({ foods, city }: Props) {
 
   return (
     <div>
+      {/* 标题区 */}
       <div
         style={{
-          fontSize: "14px",
+          fontSize: "22px",
           fontWeight: 700,
           color: "#111",
           marginBottom: "4px",
         }}
       >
-        {city}必吃小吃
+        必吃美食
       </div>
-      <div style={{ fontSize: "12px", color: "#aaa", marginBottom: "12px" }}>
-        来了就不能错过这些
+      <div style={{ fontSize: "13px", color: "#999", marginBottom: "16px" }}>
+        {city}经典小吃与本帮菜推荐
       </div>
+
+      {/* 列表 */}
       <div
         style={{
           background: "#fff",
@@ -35,58 +38,46 @@ export default function LocalFoodList({ foods, city }: Props) {
           <div
             key={i}
             style={{
-              padding: "12px 16px",
+              padding: "14px 16px",
               borderBottom: i < foods.length - 1 ? "1px solid #f5f5f5" : "none",
               display: "flex",
-              alignItems: "center",
+              alignItems: "flex-start",
+              justifyContent: "space-between",
               gap: "12px",
             }}
           >
-            {/* emoji */}
-            <div
-              style={{
-                width: "44px",
-                height: "44px",
-                borderRadius: "12px",
-                background: "#f9f9f7",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "24px",
-                flexShrink: 0,
-              }}
-            >
-              {food.emoji}
-            </div>
-
-            {/* 内容 */}
+            {/* 左侧：名称 + 描述 */}
             <div style={{ flex: 1 }}>
               <div
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  marginBottom: "3px",
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  color: "#111",
+                  marginBottom: "4px",
                 }}
               >
-                <span
-                  style={{ fontSize: "14px", fontWeight: 600, color: "#111" }}
-                >
-                  {food.name}
-                </span>
-                <span
-                  style={{
-                    fontSize: "12px",
-                    color: "#e65100",
-                    fontWeight: 600,
-                  }}
-                >
-                  {food.price}
-                </span>
+                {food.name}
               </div>
-              <div style={{ fontSize: "12px", color: "#666", lineHeight: 1.5 }}>
+              <div style={{ fontSize: "12px", color: "#999", lineHeight: 1.5 }}>
                 {food.description}
               </div>
+            </div>
+
+            {/* 右侧：胶囊价格标签 */}
+            <div
+              style={{
+                flexShrink: 0,
+                background: "#fff5f0",
+                border: "1px solid #ffd8c2",
+                borderRadius: "20px",
+                padding: "3px 10px",
+                fontSize: "12px",
+                color: "#e65100",
+                fontWeight: 500,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {food.price}
             </div>
           </div>
         ))}

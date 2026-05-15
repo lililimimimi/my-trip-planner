@@ -1,6 +1,8 @@
 import requests
 from config import settings
 import os
+import chromadb
+from sentence_transformers import SentenceTransformer
 
 
 def search_attractions(keywords: str, city: str) -> list:
@@ -360,7 +362,48 @@ def get_local_foods(city: str) -> list:
     except Exception as e:
         print(f"读取知识库失败: {e}")
         return []
-           
+
+# 初始化 RAG
+_rag_model = None
+_rag_collection = None
+
+def get_rag():
+    global _rag_model, _rag_collection
+    if _rag_model is None:
+        try:
+            _rag_model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+            rag_client = chromadb.PersistentClient(path="./chroma_db")
+            _rag_collection = rag_client.get_collection(name="travel_guide")
+            print("✅ RAG 知识库加载成功")
+        except Exception as e:
+            print(f"⚠️ RAG 知识库未初始化: {e}")
+    return _rag_model, _rag_collection
+
+def search_rag(query: str, city: str = "", n_results: int = 3) -> str:
+    """搜索旅行攻略知识库"""
+    try:
+        model, collection = get_rag()
+        if not model or not collection:
+            return ""
+        
+        embedding = model.encode(query).tolist()
+        
+        # 如果有城市，优先搜索该城市的内容
+        where = {"city": city} if city else None
+        
+        results = collection.query(
+            query_embeddings=[embedding],
+            n_results=n_results,
+            where=where
+        )
+        
+        if results and results['documents']:
+            docs = results['documents'][0]
+            return "\n".join(docs)
+        return ""
+    except Exception as e:
+        print(f"RAG 搜索失败: {e}")
+        return ""           
 def search_knowledge_base(query: str) -> str:
     """RAG知识库查询（第三阶段实现，暂时返回空）"""
     return ""
